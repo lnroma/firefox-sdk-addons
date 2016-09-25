@@ -1,0 +1,43 @@
+{
+  "title": "habrahabr screenshoter",
+  "name": "habrscreen",
+  "version": "0.0.1",
+  "description": "This add-on for make screenshot and upload to yandex disk",
+  "main": "index.js",
+  "author": "Roman",
+  "engines": {
+    "firefox": ">=38.0a1"
+  },
+  "license": "MIT",
+  "keywords": [
+    "jetpack"
+  ],
+  "preferences": [
+    {
+      "name": "hClientId",
+      "title": "client id",
+      "description": "client id",
+      "type": "string",
+      "value": "8fc231e60575439fafcdb3b9281778a3"
+    },
+    {
+      "type": "control",
+      "label": "get oAuth token",
+      "name" : "getYaToken",
+      "title": "Token"
+    },
+    {
+      "description": "oauth token",
+      "name": "oauthKey",
+      "type": "string",
+      "title": "oauth token"
+    },
+    {
+      "description": "automaticaly copy to clipboard",
+      "title": "autocopy to clipboard",
+      "name":"autoCopy",
+      "type":"bool",
+      "value":true
+    }
+  ]
+}
