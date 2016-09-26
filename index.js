@@ -1,9 +1,24 @@
-var buttons = require('sdk/ui/button/action');
+var ui = require('sdk/ui');
+var {ActionButton} = require('sdk/ui/button/action');
+var {Toolbar} = require('sdk/ui/toolbar');
+var {Sidebar} = require('sdk/ui/sidebar');
+
 var tabs = require("sdk/tabs");
 
-var button = buttons.ActionButton({
+var myscreenshots = ui.ActionButton({
+    id: "my-screens-button",
+    label:"Show files",
+    icon: {
+        "16": "./image/screens/icon16.png",
+        "32": "./image/screens/icon32.png",
+        "64": "./image/screens/icon64.png"
+    },
+    onClick: showScreens
+});
+
+var button = ui.ActionButton({
     id: "mozilla-link",
-    label: "Visit Mozilla",
+    label: "Make screenshot",
     icon: {
         "16": "./image/camera16.png",
         "32": "./image/camera32.png",
@@ -12,11 +27,37 @@ var button = buttons.ActionButton({
     onClick: makeScreen
 });
 
+var toolbar = ui.Toolbar({
+    title: "Develop toolbar",
+    items: [button,myscreenshots]
+});
+
+var sidebar = ui.Sidebar({
+    id: 'my-video',
+    title: 'My video',
+    url: require("sdk/self").data.url("./html/sidebar.html")
+});
+
+var sidebarScreens = ui.Sidebar({
+    id: 'my-screen',
+    title: 'My screenshots',
+    url: require("sdk/self").data.url("./html/screens.html")
+})
+
+// sidebarScreens
+// sidebar.show();
+
+function showScreens()
+{
+    sidebarScreens.show();
+}
+
 /**
  * click to button screenshot
  * @param state
  */
-function makeScreen(state) {
+function makeScreen(state)
+{
     var date = new Date();
     var fileScreen = date.getTime().toString() + '_screen.png';
 
@@ -52,7 +93,7 @@ function system(shell, args) {
  */
 function getHeaders() {
     return {
-        Authorization: "OAuth "+require('sdk/simple-prefs').prefs['oauthKey']
+        Authorization: "OAuth " + require('sdk/simple-prefs').prefs['oauthKey']
     };
 }
 
@@ -63,15 +104,15 @@ function getHeaders() {
 function uploadToYandex(name) {
     var Request = require('sdk/request').Request;
     const fileIO = require("sdk/io/file");
-    var file = fileIO.open('/tmp/'+name,"b");
+    var file = fileIO.open('/tmp/' + name, "b");
 
     Request({
-        url: "https://cloud-api.yandex.net/v1/disk/resources/upload?path="+name,
+        url: "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" + name,
         headers: getHeaders(),
         onComplete: function (response) {
             var result = JSON.parse(response.text);
-            if(result.method == "PUT") {
-                putRequest(result.href,'/tmp/'+name);
+            if (result.method == "PUT") {
+                putRequest(result.href, '/tmp/' + name);
                 // publicate file
                 publicateFile(name);
             }
@@ -87,17 +128,17 @@ function publicateFile(name) {
     var Request = require('sdk/request').Request;
     var result;
     Request({
-        url:"https://cloud-api.yandex.net/v1/disk/resources/publish?path="+name,
+        url: "https://cloud-api.yandex.net/v1/disk/resources/publish?path=" + name,
         headers: getHeaders(),
         onComplete: function (responsePublic) {
             result = JSON.parse(responsePublic.text);
-            if(result.method == "GET") {
+            if (result.method == "GET") {
                 Request({
-                    url:result.href,
-                    headers:getHeaders(),
+                    url: result.href,
+                    headers: getHeaders(),
                     onComplete: function (resp) {
                         result = JSON.parse(resp.text);
-                        if(require('sdk/simple-prefs').prefs['autoCopy']) {
+                        if (require('sdk/simple-prefs').prefs['autoCopy']) {
                             var clipboard = require("sdk/clipboard");
                             clipboard.set(result.public_url);
                         }
@@ -114,15 +155,13 @@ function publicateFile(name) {
  * @param url
  * @param file
  */
-function putRequest(url,file)
-{
+function putRequest(url, file) {
     const {Cc, Ci} = require("chrome");
     // Make a stream from a file.
     var stream = Cc["@mozilla.org/network/file-input-stream;1"]
         .createInstance(Ci.nsIFileInputStream);
 
-    var fileIo = Cc["@mozilla.org/file/local;1"].
-    createInstance(Ci.nsILocalFile);
+    var fileIo = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
     fileIo.initWithPath(file);
 
     stream.init(fileIo, 0x04 | 0x08, 0644, 0x04); // file is an nsIFile instance
@@ -139,9 +178,9 @@ function putRequest(url,file)
  * get client oauth token
  */
 var sp = require("sdk/simple-prefs");
-sp.on("getYaToken", function() {
+sp.on("getYaToken", function () {
     tabs.open('https://oauth.yandex.ru/authorize'
-        +'?response_type=token'
-        +'&client_id='
-        +require('sdk/simple-prefs').prefs['hClientId']);
+        + '?response_type=token'
+        + '&client_id='
+        + require('sdk/simple-prefs').prefs['hClientId']);
 });
