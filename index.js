@@ -2,12 +2,12 @@ var ui = require('sdk/ui');
 var {ActionButton} = require('sdk/ui/button/action');
 var {Toolbar} = require('sdk/ui/toolbar');
 var {Sidebar} = require('sdk/ui/sidebar');
-
+var {Frame} = require("sdk/ui/frame");
 var tabs = require("sdk/tabs");
 
 var myscreenshots = ui.ActionButton({
     id: "my-screens-button",
-    label:"Show files",
+    label: "Show files",
     icon: {
         "16": "./image/screens/icon16.png",
         "32": "./image/screens/icon32.png",
@@ -27,9 +27,20 @@ var button = ui.ActionButton({
     onClick: makeScreen
 });
 
+var edit = ui.ActionButton({
+    id: "edit-page",
+    label: "Edit page",
+    icon: {
+        "16": "./image/pencil/icon16.png",
+        "32": "./image/pencil/icon32.png",
+        "64": "./image/pencil/icon64.png"
+    },
+    onClick: editPage
+});
+
 var toolbar = ui.Toolbar({
     title: "Develop toolbar",
-    items: [button,myscreenshots]
+    items: [button, myscreenshots, edit]
 });
 
 var sidebar = ui.Sidebar({
@@ -38,29 +49,70 @@ var sidebar = ui.Sidebar({
     url: require("sdk/self").data.url("./html/sidebar.html")
 });
 
+var sidebarColor = ui.Sidebar({
+    id:'sidebar-color',
+    title: 'Настройка рисования',
+    url: require("sdk/self").data.url('./html/draw.html')
+});
+
+var workerArr = [];
+
+/**
+ * sidebar logics
+ */
 var sidebarScreens = ui.Sidebar({
     id: 'my-screen',
     title: 'My screenshots',
-    url: require("sdk/self").data.url("./html/screens.html")
-})
+    url: require("sdk/self").data.url("./html/screens.html"),
+    onAttach: function (worker) {
+        worker.port.on("ping", function (data) {
+           require('./lib/Yandex/Disk').getPublicScreens(function (response) {
+               var result = JSON.parse(response.text);
+               var resultHtml = '';
+               result.items.forEach(function (value) {
+                   resultHtml += '<tr><td><a href="' + value.public_url + '" >' + value.public_url + '</a></td></tr>';
+               });
+               worker.port.emit("pong", resultHtml);
+           })
+        });
+    }
+});
 
-// sidebarScreens
-// sidebar.show();
+var { attach, detach } = require('sdk/content/mod');
+var { Style } = require('sdk/stylesheet/style');
 
-function showScreens()
-{
+var style = Style({
+    uri: data.url('html/css/content.css')
+});
+/**
+ * mark page place
+ */
+function editPage() {
+    // sidebarColor.show();
+    var tabs = require('sdk/tabs');
+    var data = require("sdk/self").data;
+    attach(style,tabs.activeTab);
+    tabs.activeTab.attach({
+        contentScriptFile: data.url('html/scripts/content.js'),
+    });
+}
+
+/**
+ * show all screens
+ */
+function showScreens() {
+    console.log('show screen');
     sidebarScreens.show();
 }
 
 /**
- * click to button screenshot
+ * click to button :screenshot
  * @param state
  */
-function makeScreen(state)
-{
+function makeScreen(state) {
     var date = new Date();
     var fileScreen = date.getTime().toString() + '_screen.png';
-
+    var Yandex = require('./lib/Yandex/Disk');
     var args = ["-s", "/tmp/" + fileScreen];
 
     system(
@@ -68,7 +120,7 @@ function makeScreen(state)
         args
     );
 
-    uploadToYandex(fileScreen);
+    Yandex.uploadToYandex(fileScreen);
 }
 
 /**
@@ -85,93 +137,6 @@ function system(shell, args) {
     var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
     process.init(file);
     process.run(true, args, args.length);
-}
-
-/**
- * header for request
- * @returns {{Authorization: string}}
- */
-function getHeaders() {
-    return {
-        Authorization: "OAuth " + require('sdk/simple-prefs').prefs['oauthKey']
-    };
-}
-
-/**
- * upload screenshot to yandex
- * @param name
- */
-function uploadToYandex(name) {
-    var Request = require('sdk/request').Request;
-    const fileIO = require("sdk/io/file");
-    var file = fileIO.open('/tmp/' + name, "b");
-
-    Request({
-        url: "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" + name,
-        headers: getHeaders(),
-        onComplete: function (response) {
-            var result = JSON.parse(response.text);
-            if (result.method == "PUT") {
-                putRequest(result.href, '/tmp/' + name);
-                // publicate file
-                publicateFile(name);
-            }
-        }
-    }).get();
-}
-
-/**
- * publicate file on yandex disk
- * @param name
- */
-function publicateFile(name) {
-    var Request = require('sdk/request').Request;
-    var result;
-    Request({
-        url: "https://cloud-api.yandex.net/v1/disk/resources/publish?path=" + name,
-        headers: getHeaders(),
-        onComplete: function (responsePublic) {
-            result = JSON.parse(responsePublic.text);
-            if (result.method == "GET") {
-                Request({
-                    url: result.href,
-                    headers: getHeaders(),
-                    onComplete: function (resp) {
-                        result = JSON.parse(resp.text);
-                        if (require('sdk/simple-prefs').prefs['autoCopy']) {
-                            var clipboard = require("sdk/clipboard");
-                            clipboard.set(result.public_url);
-                        }
-                        tabs.open(result.public_url);
-                    }
-                }).get();
-            }
-        }
-    }).put();
-}
-
-/**
- * put request to yandex api
- * @param url
- * @param file
- */
-function putRequest(url, file) {
-    const {Cc, Ci} = require("chrome");
-    // Make a stream from a file.
-    var stream = Cc["@mozilla.org/network/file-input-stream;1"]
-        .createInstance(Ci.nsIFileInputStream);
-
-    var fileIo = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-    fileIo.initWithPath(file);
-
-    stream.init(fileIo, 0x04 | 0x08, 0644, 0x04); // file is an nsIFile instance
-
-    var req = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-        .createInstance(Ci.nsIXMLHttpRequest);
-
-    req.open('PUT', url, false);
-    req.setRequestHeader('Content-Type', "application/binary");
-    req.send(stream);
 }
 
 /**

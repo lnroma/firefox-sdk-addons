@@ -30,6 +30,7 @@
       "description": "oauth token",
       "name": "oauthKey",
       "type": "string",
+      "value":"AQAAAAASpR-SAAN8oaVkPUrH2UrWt48EqHV4HY0",
       "title": "oauth token"
     },
     {

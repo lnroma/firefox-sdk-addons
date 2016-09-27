@@ -1,0 +1,9 @@
+<input type="text" style="height: 25px;" id="text">
+<script>
+    var textField = window.document.getElementById("text");
+    textField.addEventListener("change", fieldChange);
+
+    function fieldChange() {
+        window.parent.postMessage(citySelector.value, "*");
+    }
+</script>
