@@ -70,7 +70,7 @@ var sidebarScreens = ui.Sidebar({
                var result = JSON.parse(response.text);
                var resultHtml = '';
                result.items.forEach(function (value) {
-                   resultHtml += '<tr><td><a href="' + value.public_url + '" >' + value.public_url + '</a></td></tr>';
+                   resultHtml += '<tr><td><a href="' + value.public_url + '" ><img src="'+value.preview+'" /></a></td></tr>';
                });
                worker.port.emit("pong", resultHtml);
            })
