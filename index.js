@@ -50,7 +50,7 @@ var sidebar = ui.Sidebar({
 });
 
 var sidebarColor = ui.Sidebar({
-    id:'sidebar-color',
+    id: 'sidebar-color',
     title: 'Настройка рисования',
     url: require("sdk/self").data.url('./html/draw.html')
 });
@@ -66,23 +66,23 @@ var sidebarScreens = ui.Sidebar({
     url: require("sdk/self").data.url("./html/screens.html"),
     onAttach: function (worker) {
         worker.port.on("ping", function (data) {
-           require('./lib/Yandex/Disk').getPublicScreens(function (response) {
-               var result = JSON.parse(response.text);
-               var resultHtml = '';
-               result.items.forEach(function (value) {
-                   resultHtml += '<tr><td><a href="' + value.public_url + '" ><img src="'+value.preview+'" /></a></td></tr>';
-               });
-               worker.port.emit("pong", resultHtml);
-           })
+            require('./lib/Yandex/Disk').getPublicScreens(function (response) {
+                var result = JSON.parse(response.text);
+                var resultHtml = '';
+                result.items.forEach(function (value) {
+                    resultHtml += '<tr><td><a href="' + value.public_url + '" ><img src="' + value.preview + '" /></a></td></tr>';
+                });
+                worker.port.emit("pong", resultHtml);
+            })
         });
     }
 });
 
-var { attach, detach } = require('sdk/content/mod');
-var { Style } = require('sdk/stylesheet/style');
+var {attach, detach} = require('sdk/content/mod');
+var {Style} = require('sdk/stylesheet/style');
 
 var style = Style({
-    uri: data.url('html/css/content.css')
+    uri: require("sdk/self").data.url('html/css/content.css')
 });
 /**
  * mark page place
@@ -91,9 +91,9 @@ function editPage() {
     // sidebarColor.show();
     var tabs = require('sdk/tabs');
     var data = require("sdk/self").data;
-    attach(style,tabs.activeTab);
+    attach(style, tabs.activeTab);
     tabs.activeTab.attach({
-        contentScriptFile: data.url('html/scripts/content.js'),
+        contentScriptFile: require("sdk/self").data.url('html/scripts/content.js'),
     });
 }
 
@@ -101,7 +101,6 @@ function editPage() {
  * show all screens
  */
 function showScreens() {
-    console.log('show screen');
     sidebarScreens.show();
 }
 
@@ -112,31 +111,23 @@ function showScreens() {
 function makeScreen(state) {
     var date = new Date();
     var fileScreen = date.getTime().toString() + '_screen.png';
+    var Screenshoter = require('./lib/System/Screenshot');
     var Yandex = require('./lib/Yandex/Disk');
-    var args = ["-s", "/tmp/" + fileScreen];
 
-    system(
-        '/usr/bin/scrot',
-        args
-    );
+    const {window: {document}} = require('sdk/addon/window');
 
-    Yandex.uploadToYandex(fileScreen);
-}
+    // применяем подложку к странице
+    var tabs = require('sdk/tabs');
+    attach(style, tabs.activeTab);
+    tabs.activeTab.attach({
+        contentScriptFile: require("sdk/self").data.url('html/scripts/oweridecontent.js'),
+    });
 
-/**
- * call system request
- * @param shell
- * @param args
- */
-function system(shell, args) {
-    const {Cc, Ci} = require("chrome");
-
-    var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
-    file.initWithPath(shell);
-
-    var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-    process.init(file);
-    process.run(true, args, args.length);
+    Screenshoter.captureTab(fileScreen).then(function (data) {
+        Screenshoter.saveTmpFile(data, fileScreen).then(function (data) {
+            Yandex.uploadToYandex(data);
+        });
+    });
 }
 
 /**

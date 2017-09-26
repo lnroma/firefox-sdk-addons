@@ -2,8 +2,8 @@ var body = document.getElementsByTagName('body');
 body[0].innerHTML = '<div id="back-panel" style="z-index:9999;width: '+window.screen.availWidth+'px;height: '+window.screen.availHeight+'px;position:absolute;apacity:0.3"></div>'+body[0].innerHTML;
 body[0].innerHTML = '<div class="js-overide" id="overide" ></div>'+body[0].innerHTML;
 
-body[0].innerHTML = '<div id="panel" class="testing" style="position: absolute;border-radius:10px;opacity: 0.9; z-index: 9999999; width: auto;height: auto">' +
-    '<fieldset style="border: solid 2px red; color: blue;;">' +
+body[0].innerHTML = '<div id="panel" class="testing" style="position: absolute;border-radius:10px; z-index: 9999999; width: auto;height: auto">' +
+    '<fieldset style="border: solid 2px red; background: #f7fcc8; color: blue;;">' +
     '<legend>Настройка карандаша</legend>' +
     'Цвет карандаша:<input type="color" id="color"><br/>' +
     'Текст подсказки:<input type="text" id="text"><br/>' +
@@ -14,7 +14,6 @@ body[0].innerHTML = '<div id="panel" class="testing" style="position: absolute;b
     body[0].innerHTML;
 
 var canvas = document.getElementById('overide');
-console.log(document.getElementById('overide'),canvas);
 canvas.style.position = 'absolute';
 canvas.style['z-index'] = '99999';
 var leftTopCoord = {};
@@ -23,17 +22,12 @@ var color = 'red';
 var flagDraw = false;
 var message = false;
 var flagNoDraw = false;
-// canvas.onclick = function (e) {
-//     message = prompt('Введите новое сообщение','новое сообщение');
-//     canvas.innerText = message;
-// };
 
 var colorPicker = document.getElementById('color');
 
 document.getElementById('button-acept').onclick = function (e) {
     color = colorPicker.value;
     message = document.getElementById('text').value;
-    console.log(colorPicker.value);
 };
 
 document.getElementById('button-cancel').onclick = function (e) {
